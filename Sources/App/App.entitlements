@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- **空のまま。ここに com.apple.developer.media-device-extension を書かない。**
+
+	     書くと、このアプリが AVAudioSession をどのカテゴリでも開けなくなる（'!pla'）。
+	     MediaExperience の _CMSUtility_FetchSessionEntitlements が
+	     SecTaskCopyValueForEntitlement の戻りを見て hasMediaDeviceEntitlement を立て、
+	     立ったセッションは再生を拒否される。実機で確認済み。
+	     entitlement は拡張側（Sources/Extension/Extension.entitlements）にだけ置く。
+	     音を出すのは本体なので、本体は素のアプリのままでいる必要がある。
+
+	     App Store へ出すときだけは事情が違う。配信側の検査（ITMS-91183）が
+	     media device extension を同梱した main app bundle にこのキーを要求するので、
+	     そのときは **値が空の配列の形で** 置く。上の判定は配列の要素数が 0 でないときだけ
+	     立つので、空配列なら再生は拒否されない。 -->
+</dict>
+</plist>

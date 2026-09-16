@@ -1,0 +1,96 @@
+# MDE Passthrough
+#
+#   xcodegen generate --spec project.yml
+#
+# で MDEPassthrough.xcodeproj を作る。.xcodeproj は追跡していない（この
+# project.yml が正）。Xcode で開く前と、ここを直したあとに叩く。
+# Scripts/build.sh もこれを呼ぶ。
+#
+# **DEVELOPMENT_TEAM はここに書かない。** 建てる人が自分の Team で署名する。
+# Scripts/build.sh に TEAM_ID=XXXXXXXXXX を渡すか、生成した .xcodeproj を
+# Xcode で開いて両方の target の Signing & Capabilities で Team を選ぶ。
+# bundle ID（ai.nemut.mdepass）と App Group も自分のものに書き換えること。
+# 手順は README。
+
+name: MDEPassthrough
+options:
+  bundleIdPrefix: ai.nemut
+  deploymentTarget:
+    iOS: "27.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    CODE_SIGN_STYLE: Automatic
+    SWIFT_VERSION: "5.0"
+    CLANG_ENABLE_OBJC_ARC: YES
+    TARGETED_DEVICE_FAMILY: "1,2"
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+
+targets:
+
+  # ------------------------------------------------------------------
+  # アプリ。拡張を運び、拡張が繋ぎに来るのを待ち受けて、届いた PCM を鳴らす。
+  # ルートピッカーで Passthrough を選ぶとシステム音声がこちらへ回ってくる。
+  # ------------------------------------------------------------------
+  MDEPassthrough:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources/App
+      # LocalLink はアプリ側（受け手）と拡張側（送り手）の両方に入る。
+      - path: Sources/Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: ai.nemut.mdepass
+        PRODUCT_NAME: MDEPassthrough
+        INFOPLIST_FILE: Sources/App/Info.plist
+        # アプリ側の com.apple.developer.media-device-extension は
+        # **キーは置き、中身は空の配列**にしてある。
+        # 値が 1 つでも入っていると MediaExperience が
+        # hasMediaDeviceEntitlement を立て、このアプリ自身の
+        # AVAudioSession が '!pla' で拒否されて音を出せなくなる。
+        # protocol ID は拡張側（Sources/Extension/Extension.entitlements）にだけ書く。
+        CODE_SIGN_ENTITLEMENTS: Sources/App/App.entitlements
+        SWIFT_OBJC_BRIDGING_HEADER: Sources/App/App-Bridging-Header.h
+    dependencies:
+      - sdk: AVFoundation.framework
+      # 拡張はアプリに同梱して配る。これ以外に実機へ入れる道は無い。
+      - target: MDEPassthroughExtension
+        embed: true
+        codeSign: true
+
+  # ------------------------------------------------------------------
+  # Media Device Extension 本体。
+  # MediaOutputDevice を広告し、選ばれたら AudioServerPlugIn を publish して
+  # システム音声のサンプルを受け、TCP でアプリへ流す。
+  # ------------------------------------------------------------------
+  MDEPassthroughExtension:
+    type: extensionkit-extension
+    platform: iOS
+    sources:
+      - path: Sources/Extension
+      - path: Sources/Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: ai.nemut.mdepass.extension
+        PRODUCT_NAME: MDEPassthroughExtension
+        INFOPLIST_FILE: Sources/Extension/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Sources/Extension/Extension.entitlements
+        SWIFT_OBJC_BRIDGING_HEADER: Sources/Extension/Extension-Bridging-Header.h
+    dependencies:
+      - sdk: MediaDevice.framework
+      - sdk: CoreAudio.framework
+      - sdk: AudioToolbox.framework
+      - sdk: AVFoundation.framework
+      - sdk: Network.framework
+      - sdk: ExtensionFoundation.framework
+
+schemes:
+  # xcodebuild -scheme に渡すもの。明示しておかないと、Xcode で一度開くまで
+  # scheme が無く、Scripts/build.sh が scheme を見つけられない。
+  MDEPassthrough:
+    build:
+      targets:
+        MDEPassthrough: all

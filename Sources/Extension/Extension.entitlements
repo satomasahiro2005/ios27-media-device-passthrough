@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- これ 1 本だけ。App Group は要らない。
+	     拡張の sandbox は App Group のファイル書き込みを拒否するので、
+	     音の受け渡しは TCP でやっている（Sources/Shared/LocalLink.h）。
+	     付けたままだと provisioning profile に App Groups の権限が要り、
+	     建たない理由が 1 つ増えるだけ。 -->
+	<key>com.apple.developer.media-device-extension</key>
+	<array>
+		<string>media-device-protocol.ai.nemut.mdepass</string>
+	</array>
+</dict>
+</plist>

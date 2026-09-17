@@ -77,6 +77,48 @@ that carries the samples to the app. The system reads it as part of deciding whe
 route is permitted, so it has to be real either way. This extension names the port the app
 is already listening on, `127.0.0.1:47101`.
 
+## The protocol description is registered at boot
+
+`UTTypeDescription`, in the extension's `UTExportedTypeDeclarations`, is not only a label.
+Change it to a string the device has not seen before and the pick fails the same way a bad
+endpoint does: the route reverts after a second or two. **It keeps failing until the device
+is rebooted.** Changing it back to a string the device already registered works immediately,
+without a reboot.
+
+Measured on one device (iPhone 16, iOS 27.0) by changing that one string and nothing else:
+
+| description | known to the device | pick |
+| --- | --- | --- |
+| `48 kHz, 32-bit float` | registered at last boot | works |
+| `[DEBUG]` | new | reverts |
+| `48 kHz, 32-bit float` again | known | works, no reboot |
+
+This is easy to misread, because **the new string does show up**. It is the second line
+under the device name in Control Center, and it appears in the failure dialog, which reads
+`"<device name>" with <description>`. Seeing your new text there says the bundle was
+installed, not that the route will connect.
+
+In a device log the failure is indistinguishable from the endpoint problem above:
+
+```
+mediaremoted: Response: SetOutputDevices.perfrom<…> returned with error
+  Code=28 "Adding or removing devices from the AV output context has failed."
+  … in 2.0224 seconds          # a working pick returns in 0.05–0.3
+→ [RoutingTimeline] .failed(…, resolution:.cancelFutureForItem(…))
+```
+
+The extension process still launches and registers as `media-device-discovery-extension`,
+then stays silent — it is never activated. Whether you are in this state is easiest to tell
+from your own sample-delivery log line: count it per minute and it is simply absent.
+
+**This matters for shipped updates.** If a release changes this string, every user who
+installs that update gets a device that will not connect until they reboot, and nothing in
+the UI suggests rebooting. Treat the description as fixed after the first release, or accept
+that the update needs a reboot to work.
+
+`UTTypeIdentifier` is a different thing: changing that really does replace the registration,
+and the device disappears from the picker entirely.
+
 ## Now playing
 
 Do not claim playback with `MPNowPlayingInfoCenter` in the app.

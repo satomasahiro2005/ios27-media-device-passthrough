@@ -11,7 +11,7 @@ sample was extracted from. The notes that cost the most time to find are the one
 entitlements, endpoints, now playing and video.
 
 ```
-Spotify / YouTube / a game
+Spotify / YouTube / another player
   |   user picks "Passthrough" in Control Center
 extension   MediaDevice + AudioServerPlugIn      receives the samples
   |   TCP 127.0.0.1:47101, float32 interleaved, 2ch, 48 kHz
